@@ -49,9 +49,19 @@ def get_segments(enterprise_id,site_id):
     query = "SELECT * FROM gql_sample.segment WHERE (site_id='" + str(site_id) + "');"
     return db.get_json_from_query(query)
 
-@app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/assets", methods=["GET"])
-def get_assets_by_site(enterprise_id,site_id):
-    query = "SELECT * FROM gql_sample.asset WHERE (site_id='" + str(site_id) + "');"
+@app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>", methods=["GET"])
+def get_segment_by_id(enterprise_id,site_id,segment_id):
+    query = "SELECT * FROM gql_sample.segment WHERE (id='" + str(segment_id) + "');"
+    return db.get_json_from_query(query)
+
+@app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>/assets", methods=["GET"])
+def get_assets(enterprise_id,site_id,segment_id):
+    query = "SELECT * FROM gql_sample.asset WHERE (segment_id='" + str(segment_id) + "');"
+    return db.get_json_from_query(query)
+
+@app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>/assets/<asset_id>", methods=["GET"])
+def get_assets_by_id(enterprise_id,site_id,segment_id,asset_id):
+    query = "SELECT * FROM gql_sample.asset WHERE (id='" + str(asset_id) + "');"
     return db.get_json_from_query(query)
 ####
 
@@ -81,13 +91,13 @@ class Segment(graphene.ObjectType):
 
     def resolve_assets(self, args, context, info):
         query = "SELECT * FROM gql_sample.asset WHERE(segment_id='" + str(self.id) + "')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Asset()
             a.map_from_row(row)
-            list.append(a)
-        return list
+            results.append(a)
+        return results
 
     def map_from_row(self, row):
         self.id = row[0]
@@ -106,27 +116,27 @@ class Site(graphene.ObjectType):
 
     def resolve_segments(self, args, context, info):
         query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(self.id) + "')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Asset()
             a.map_from_row(row)
-            list.append(a)
-        return list
+            results.append(a)
+        return results
 
     def resolve_assets(self, args, context, info):
         query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(self.id) + "')"
-        segment_rows = db.execute_query(query);
-        list = []
+        segment_rows = db.execute_query(query)
+        results = []
         for segment_row in segment_rows:
             segment_id = segment_row[0]
             query = "SELECT * FROM gql_sample.asset WHERE(segment_id='" + str(segment_id) + "')"
-            rows = db.execute_query(query);
+            rows = db.execute_query(query)
             for row in rows:
                 a = Asset()
                 a.map_from_row(row)
-                list.append(a)
-        return list
+                results.append(a)
+        return results
 
     def map_from_row(self, row):
         self.id = row[0]
@@ -143,29 +153,47 @@ class Enterprise(graphene.ObjectType):
     segments = graphene.List(Segment)
     assets = graphene.List(Asset)
 
-    def resolve_segments(self, args, context, info):
-        query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(self.id) + "')"
-        rows = db.execute_query(query);
-        list = []
+    def resolve_sites(self, args, context, info):
+        query = "SELECT * FROM gql_sample.site WHERE(enterprise_id='" + str(self.id) + "')"
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
-            a = Asset()
+            a = Site()
             a.map_from_row(row)
-            list.append(a)
-        return list
+            results.append(a)
+        return results
+
+    def resolve_segments(self, args, context, info):
+        query = "SELECT * FROM gql_sample.site WHERE(enterprise_id='" + str(self.id) + "')"
+        site_rows = db.execute_query(query)
+        results = []
+        for site_row in site_rows:
+            site_id = site_row[0]
+            query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(site_id) + "')"
+            rows = db.execute_query(query)
+            for row in rows:
+                a = Segment()
+                a.map_from_row(row)
+                results.append(a)
+        return results
 
     def resolve_assets(self, args, context, info):
-        query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(self.id) + "')"
-        segment_rows = db.execute_query(query);
-        list = []
-        for segment_row in segment_rows:
-            segment_id = segment_row[0]
-            query = "SELECT * FROM gql_sample.asset WHERE(segment_id='" + str(segment_id) + "')"
-            rows = db.execute_query(query);
-            for row in rows:
-                a = Asset()
-                a.map_from_row(row)
-                list.append(a)
-        return list
+        query = "SELECT * FROM gql_sample.site WHERE(enterprise_id='" + str(self.id) + "')"
+        site_rows = db.execute_query(query)
+        results = []
+        for site_row in site_rows:
+            site_id = site_row[0]
+            query = "SELECT * FROM gql_sample.segment WHERE(site_id='" + str(site_id) + "')"
+            segment_rows = db.execute_query(query)
+            for segment_row in segment_rows:
+                segment_id = segment_row[0]
+                query = "SELECT * FROM gql_sample.asset WHERE(segment_id='" + str(segment_id) + "')"
+                rows = db.execute_query(query)
+                for row in rows:
+                    a = Asset()
+                    a.map_from_row(row)
+                    results.append(a)
+        return results
 
     def map_from_row(self, row):
         self.id = row[0]
@@ -188,91 +216,88 @@ class Query(graphene.ObjectType):
 
     def resolve_assets(self, args, context, info):
         query = "SELECT * FROM gql_sample.asset"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Asset()
             a.map_from_row(row)
-            list.append(a)
-        return list
+            results.append(a)
+        return results
 
     def resolve_asset(self, args, context, info):
         id = args.get('id')
         query = "SELECT * FROM gql_sample.asset WHERE(id='"+str(id)+"')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Asset()
             a.map_from_row(row)
-            list.append(a)
-        return list[0]
+            results.append(a)
+        return results[0]
 
     def resolve_segments(self, args, context, info):
         query = "SELECT * FROM gql_sample.segment"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Segment()
             a.map_from_row(row)
-            list.append(a)
-        return list
+            results.append(a)
+        return results
 
     def resolve_segment(self, args, context, info):
         id = args.get('id')
         query = "SELECT * FROM gql_sample.segment WHERE(id='" + str(id) + "')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Segment()
             a.map_from_row(row)
-            list.append(a)
-        return list[0]
+            results.append(a)
+        return results[0]
 
 
     def resolve_sites(self, args, context, info):
         query = "SELECT * FROM gql_sample.site"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Site()
             a.map_from_row(row)
-            list.append(a)
-        return list
-
+            results.append(a)
+        return results
 
     def resolve_site(self, args, context, info):
         id = args.get('id')
         query = "SELECT * FROM gql_sample.site WHERE(id='" + str(id) + "')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Site()
             a.map_from_row(row)
-            list.append(a)
-        return list[0]
-
+            results.append(a)
+        return results[0]
 
     def resolve_enterprises(self, args, context, info):
         query = "SELECT * FROM gql_sample.enterprise"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Enterprise()
             a.map_from_row(row)
-            list.append(a)
-        return list
-
+            results.append(a)
+        return results
 
     def resolve_enterprise(self, args, context, info):
         id = args.get('id')
         query = "SELECT * FROM gql_sample.enterprise WHERE(id='" + str(id) + "')"
-        rows = db.execute_query(query);
-        list = []
+        rows = db.execute_query(query)
+        results = []
         for row in rows:
             a = Enterprise()
             a.map_from_row(row)
-            list.append(a)
-        return list[0]
+            results.append(a)
+        return results[0]
 
 schema = graphene.Schema(query=Query)
 
@@ -286,14 +311,13 @@ def gql_schema():
 @app.route("/gql/query", methods=["POST"])
 def gql_query():
     query = request.data
-    print query
+    print "[QUERY] - " + query
     result = schema.execute(query)
 
     if len(result.errors) > 0:
         for error in result.errors:
             print "[ERROR] - " + str(error)
 
-    # print result.data
     return json.dumps(result.data)
 ###
 
