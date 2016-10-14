@@ -1,0 +1,4 @@
+Flask
+graphene
+psycopg2
+sqlalchemy
