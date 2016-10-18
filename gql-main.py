@@ -4,6 +4,7 @@ import json
 
 from flask import Flask
 from flask import request
+from flask_cors import cross_origin
 
 from Database import database
 
@@ -25,41 +26,49 @@ db = database()
 
 ### Rest Calls
 @app.route("/rest/enterprises", methods=["GET"])
+@cross_origin()
 def get_enterprises():
     query = "SELECT * FROM gql_sample.enterprise"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>", methods=["GET"])
+@cross_origin()
 def get_enterprise_by_id(enterprise_id):
     query = "SELECT * FROM gql_sample.enterprise WHERE (id='" + str(enterprise_id) + "');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites", methods=["GET"])
+@cross_origin()
 def get_sites(enterprise_id):
     query = "SELECT * FROM gql_sample.site WHERE (enterprise_id='" + str(enterprise_id) + "');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>", methods=["GET"])
+@cross_origin()
 def get_site_by_id(enterprise_id,site_id):
     query = "SELECT * FROM gql_sample.site WHERE (id='" + str(site_id) + "' and enterprise_id='"+ str(enterprise_id)+"');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments", methods=["GET"])
+@cross_origin()
 def get_segments(enterprise_id,site_id):
     query = "SELECT * FROM gql_sample.segment WHERE (site_id='" + str(site_id) + "');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>", methods=["GET"])
+@cross_origin()
 def get_segment_by_id(enterprise_id,site_id,segment_id):
     query = "SELECT * FROM gql_sample.segment WHERE (id='" + str(segment_id) + "');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>/assets", methods=["GET"])
+@cross_origin()
 def get_assets(enterprise_id,site_id,segment_id):
     query = "SELECT * FROM gql_sample.asset WHERE (segment_id='" + str(segment_id) + "');"
     return db.get_json_from_query(query)
 
 @app.route("/rest/enterprises/<enterprise_id>/sites/<site_id>/segments/<segment_id>/assets/<asset_id>", methods=["GET"])
+@cross_origin()
 def get_assets_by_id(enterprise_id,site_id,segment_id,asset_id):
     query = "SELECT * FROM gql_sample.asset WHERE (id='" + str(asset_id) + "');"
     return db.get_json_from_query(query)
@@ -201,6 +210,26 @@ class Enterprise(graphene.ObjectType):
         self.description = row[2]
 
 
+
+class CreateEnterprise(graphene.Mutation):
+    class Input:
+        name = graphene.String()
+        description = graphene.String()
+
+        enterprise = graphene.Field(Enterprise)
+
+    def mutate(self, args, context, info):
+        name=args.get('name')
+        description=args.get('description')
+        query = "INSERT INTO gql_sample.asset(name, description) VALUES('"+name+"', '"+description+"')"
+        rows = db.execute_query(query)
+        print rows
+        ret = Enterprise()
+        row = [name, description]
+        ret.map_from_row(row)
+        return ret
+
+
 class Query(graphene.ObjectType):
     asset = graphene.Field(Asset, id=graphene.Int())
     assets = graphene.List(Asset)
@@ -304,15 +333,24 @@ schema = graphene.Schema(query=Query)
 print schema
 
 @app.route("/gql/schema", methods=["GET"])
+@cross_origin()
 def gql_schema():
     return str(schema)
 ###
 
 @app.route("/gql/query", methods=["POST"])
+@cross_origin()
 def gql_query():
-    query = request.data
+    print request.data
+    data = json.loads(request.data)
+    query = data['query']
+    args = data['args']
+    print args
     print "[QUERY] - " + query
-    result = schema.execute(query)
+    vv = json.loads(args)
+    # result = schema.execute(query, args)
+    result = schema.execute(query, None, variable_values=vv)
+
 
     if len(result.errors) > 0:
         for error in result.errors:

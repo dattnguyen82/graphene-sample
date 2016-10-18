@@ -18,7 +18,11 @@ class database():
     conn = None
     cur = None
 
+
     def __init__(self, jdbc_uri=None, database_name=None, username=None, password_str=None, db_host=None, db_port=None):
+        self.restart_conn(jdbc_uri, database_name, username, password_str, db_host, db_port)
+
+    def restart_conn(self, jdbc_uri=None, database_name=None, username=None, password_str=None, db_host=None, db_port=None):
         services = os.getenv("VCAP_SERVICES")
 
         if services is not None:
@@ -42,18 +46,23 @@ class database():
         if db_port is not None: self.db_port = db_port
 
         try:
-            self.conn = psycopg2.connect(database=self.database_name, user=self.username, password=self.password_str, host=self.db_host, port=self.db_port)
+            self.conn = psycopg2.connect(database=self.database_name, user=self.username, password=self.password_str,
+                                         host=self.db_host, port=self.db_port)
             self.connected = True
             self.cur = self.conn.cursor()
         except:
             self.connected = False
 
+
     def execute_query(self, query):
+        # if self.conn.closed > 0:
+        #     self.restart_conn(self.jdbc_uri, self.database_name, self.username, self.password_str, self.db_host, self.db_port)
+
         rows = None
         if self.cur is not None:
             print query
             self.cur.execute(query)
-            self.conn.commit()
+            # self.conn.commit()
             rows = self.cur.fetchall()
         return rows
 

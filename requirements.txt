@@ -1,4 +1,5 @@
 Flask
-graphene
+graphene==1.0.2
 psycopg2
 sqlalchemy
+flask-cors
