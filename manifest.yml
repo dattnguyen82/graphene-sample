@@ -1,5 +1,5 @@
 ---
 applications:
 - name: gql-demo
-  memory: 512M
+  memory: 1G
   host: gql-demo

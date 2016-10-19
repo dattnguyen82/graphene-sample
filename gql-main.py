@@ -215,12 +215,15 @@ class CreateEnterprise(graphene.Mutation):
         name = graphene.String()
         description = graphene.String()
 
+    enterprise = graphene.Field(Enterprise)
+
     def mutate(self, args, context, info):
         name = args.get('name')
         description = args.get('description')
         query = "INSERT INTO gql_sample.enterprise(name, description) VALUES('"+name+"', '"+description+"')"
         db.execute_query_no_fetch(query)
-        return "OK"
+        enterprise = Enterprise()
+        return enterprise
 
 
 class CreateSite(graphene.Mutation):
@@ -229,13 +232,16 @@ class CreateSite(graphene.Mutation):
         description = graphene.String()
         enterprise_id = graphene.Int()
 
+    site = graphene.Field(Site)
+
     def mutate(self, args, context, info):
         name = args.get('name')
         description = args.get('description')
         enterprise_id = args.get('enterprise_id')
         query = "INSERT INTO gql_sample.site(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+enterprise_id+"')"
         db.execute_query_no_fetch(query)
-        return "OK"
+        site = Site()
+        return site
 
 
 class CreateSegment(graphene.Mutation):
@@ -244,13 +250,16 @@ class CreateSegment(graphene.Mutation):
         description = graphene.String()
         site_id = graphene.Int()
 
+    segment = graphene.Field(Segment)
+
     def mutate(self, args, context, info):
         name = args.get('name')
         description = args.get('description')
         site_id = args.get('site_id')
         query = "INSERT INTO gql_sample.segment(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+site_id+"')"
         db.execute_query_no_fetch(query)
-        return "OK"
+        segment = Segment()
+        return segment
 
 
 class CreateAsset(graphene.Mutation):
@@ -259,13 +268,16 @@ class CreateAsset(graphene.Mutation):
         description = graphene.String()
         segment_id = graphene.Int()
 
+    asset = graphene.Field(Asset)
+
     def mutate(self, args, context, info):
         name = args.get('name')
         description = args.get('description')
         segment_id = args.get('segment_id')
         query = "INSERT INTO gql_sample.asset(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+segment_id+"')"
         db.execute_query_no_fetch(query)
-        return "OK"
+        asset = Asset()
+        return asset
 
 
 class Mutations(graphene.ObjectType):
@@ -330,7 +342,6 @@ class Query(graphene.ObjectType):
             results.append(a)
         return results[0]
 
-
     def resolve_sites(self, args, context, info):
         query = "SELECT * FROM gql_sample.site"
         rows = db.execute_query(query)
@@ -375,7 +386,7 @@ class Query(graphene.ObjectType):
 
 schema = graphene.Schema(query=Query, mutation=Mutations)
 
-print schema
+# print schema
 
 @app.route("/gql/schema", methods=["GET"])
 @cross_origin()
@@ -386,16 +397,29 @@ def gql_schema():
 @app.route("/gql/query", methods=["POST"])
 @cross_origin()
 def gql_query():
+    result = None
+    query = None
+    args = None
+    vv = None
     print request.data
     data = json.loads(request.data)
-    query = data['query']
-    args = data['args']
-    print args
-    print "[QUERY] - " + query
-    vv = json.loads(args)
-    # result = schema.execute(query, args)
-    result = schema.execute(query, None, variable_values=vv)
+    try:
+        query = data['query']
+    except:
+        print "No query in payload"
+    try:
+        args = data['args']
+        print "[QUERY] - " + str(query)
+    except:
+        print "No arguments in payload"
+        print "[ARGS] - " + str(args)
 
+    try:
+        vv = json.loads(args)
+    except:
+        print "Args are not proper json"
+
+    result = schema.execute(query, None, variable_values=vv)
 
     if len(result.errors) > 0:
         for error in result.errors:
