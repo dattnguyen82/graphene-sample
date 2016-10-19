@@ -210,24 +210,69 @@ class Enterprise(graphene.ObjectType):
         self.description = row[2]
 
 
-
 class CreateEnterprise(graphene.Mutation):
     class Input:
         name = graphene.String()
         description = graphene.String()
 
-        enterprise = graphene.Field(Enterprise)
+    def mutate(self, args, context, info):
+        name = args.get('name')
+        description = args.get('description')
+        query = "INSERT INTO gql_sample.enterprise(name, description) VALUES('"+name+"', '"+description+"')"
+        db.execute_query_no_fetch(query)
+        return "OK"
+
+
+class CreateSite(graphene.Mutation):
+    class Input:
+        name = graphene.String()
+        description = graphene.String()
+        enterprise_id = graphene.Int()
 
     def mutate(self, args, context, info):
-        name=args.get('name')
-        description=args.get('description')
-        query = "INSERT INTO gql_sample.asset(name, description) VALUES('"+name+"', '"+description+"')"
-        rows = db.execute_query(query)
-        print rows
-        ret = Enterprise()
-        row = [name, description]
-        ret.map_from_row(row)
-        return ret
+        name = args.get('name')
+        description = args.get('description')
+        enterprise_id = args.get('enterprise_id')
+        query = "INSERT INTO gql_sample.site(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+enterprise_id+"')"
+        db.execute_query_no_fetch(query)
+        return "OK"
+
+
+class CreateSegment(graphene.Mutation):
+    class Input:
+        name = graphene.String()
+        description = graphene.String()
+        site_id = graphene.Int()
+
+    def mutate(self, args, context, info):
+        name = args.get('name')
+        description = args.get('description')
+        site_id = args.get('site_id')
+        query = "INSERT INTO gql_sample.segment(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+site_id+"')"
+        db.execute_query_no_fetch(query)
+        return "OK"
+
+
+class CreateAsset(graphene.Mutation):
+    class Input:
+        name = graphene.String()
+        description = graphene.String()
+        segment_id = graphene.Int()
+
+    def mutate(self, args, context, info):
+        name = args.get('name')
+        description = args.get('description')
+        segment_id = args.get('segment_id')
+        query = "INSERT INTO gql_sample.asset(name, description, enterprise_id) VALUES('"+name+"', '"+description+"','"+segment_id+"')"
+        db.execute_query_no_fetch(query)
+        return "OK"
+
+
+class Mutations(graphene.ObjectType):
+    create_enterprise = CreateEnterprise.Field()
+    create_site = CreateSite.Field()
+    create_segment = CreateSegment.Field()
+    create_asset = CreateAsset.Field()
 
 
 class Query(graphene.ObjectType):
@@ -328,7 +373,7 @@ class Query(graphene.ObjectType):
             results.append(a)
         return results[0]
 
-schema = graphene.Schema(query=Query)
+schema = graphene.Schema(query=Query, mutation=Mutations)
 
 print schema
 

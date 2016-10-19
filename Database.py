@@ -53,6 +53,12 @@ class database():
         except:
             self.connected = False
 
+    def execute_query_no_fetch(self, query):
+        # if self.conn.closed > 0:
+        if self.cur is not None:
+            print query
+            self.cur.execute(query)
+            self.conn.commit()
 
     def execute_query(self, query):
         # if self.conn.closed > 0:
