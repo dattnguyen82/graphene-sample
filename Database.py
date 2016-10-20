@@ -70,7 +70,7 @@ class database():
         rows = None
         if self.cur is not None:
             print query
-            try
+            try:
                 self.cur.execute(query)
                 self.conn.commit()
                 rows = self.cur.fetchall()
