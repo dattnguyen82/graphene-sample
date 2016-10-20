@@ -57,8 +57,11 @@ class database():
         # if self.conn.closed > 0:
         if self.cur is not None:
             print query
-            self.cur.execute(query)
-            self.conn.commit()
+            try:
+                self.cur.execute(query)
+                self.conn.commit()
+            except:
+                self.restart_conn()
 
     def execute_query(self, query):
         # if self.conn.closed > 0:
@@ -67,9 +70,12 @@ class database():
         rows = None
         if self.cur is not None:
             print query
-            self.cur.execute(query)
-            # self.conn.commit()
-            rows = self.cur.fetchall()
+            try
+                self.cur.execute(query)
+                self.conn.commit()
+                rows = self.cur.fetchall()
+            except:
+                self.restart_conn()
         return rows
 
     def get_json_from_query(self, query):
