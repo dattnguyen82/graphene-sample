@@ -61,6 +61,8 @@ class database():
                 self.conn.commit()
             except:
                 self.restart_conn()
+                self.cur.execute(query)
+                self.conn.commit()
 
     def execute_query(self, query):
         rows = None
@@ -72,6 +74,9 @@ class database():
                 rows = self.cur.fetchall()
             except:
                 self.restart_conn()
+                self.cur.execute(query)
+                self.conn.commit()
+                rows = self.cur.fetchall()
         return rows
 
     def get_json_from_query(self, query):
