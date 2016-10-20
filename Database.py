@@ -54,7 +54,6 @@ class database():
             self.connected = False
 
     def execute_query_no_fetch(self, query):
-        # if self.conn.closed > 0:
         if self.cur is not None:
             print query
             try:
@@ -64,9 +63,6 @@ class database():
                 self.restart_conn()
 
     def execute_query(self, query):
-        # if self.conn.closed > 0:
-        #     self.restart_conn(self.jdbc_uri, self.database_name, self.username, self.password_str, self.db_host, self.db_port)
-
         rows = None
         if self.cur is not None:
             print query
